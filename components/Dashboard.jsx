@@ -598,7 +598,7 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
                                             {/* Edit button */}
                                             <button
                                                 onClick={() => openEditModal(t)}
-                                                className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-500/20"
+                                                className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center hover:bg-blue-500/20"
                                                 aria-label="Edit transaction"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -609,7 +609,7 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
                                             {/* Delete button */}
                                             <button
                                                 onClick={() => handleDelete(t.id)}
-                                                className="w-8 h-8 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                                                className="w-8 h-8 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20"
                                                 aria-label="Delete transaction"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
