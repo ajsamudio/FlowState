@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { saveTransaction, getCategories } from '../utils/storage';
+import { createClient } from '../utils/supabase/client';
+import { saveSupabaseTransaction } from '../utils/supabaseData';
 
 // Helper to get today's date in YYYY-MM-DD format
 const getTodayDate = () => {
@@ -16,33 +18,56 @@ export default function QuickAddOverlay({ isOpen, onClose, onSave }) {
     const [comment, setComment] = useState('');
     const [type, setType] = useState('expense');
     const [date, setDate] = useState(getTodayDate());
+    const [user, setUser] = useState(null);
+    const supabase = createClient();
     const categories = getCategories();
 
-    // Reset date to today when overlay opens
+    // Check user on mount and auth change
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        checkUser();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [supabase]);
+
+    // Reset date when overlay opens
     useEffect(() => {
         if (isOpen) {
             setDate(getTodayDate());
         }
     }, [isOpen]);
 
-
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!title.trim() || !amount) return;
 
-        const transaction = {
+        const transactionData = {
             title: title.trim(),
             amount: parseFloat(amount),
             category,
             comment: comment.trim(),
             type,
-            date // Include the selected date
+            date
         };
 
-        const saved = saveTransaction(transaction);
-        onSave(saved);
+        let saved;
+        if (user) {
+            saved = await saveSupabaseTransaction(transactionData);
+        } else {
+            saved = saveTransaction(transactionData);
+        }
+
+        if (saved) {
+            onSave(saved);
+        }
 
         // Reset form
         setTitle('');
@@ -110,7 +135,25 @@ export default function QuickAddOverlay({ isOpen, onClose, onSave }) {
                         </button>
                     </div>
 
-                    {/* Date Input - FIRST */}
+                    {/* Amount Input - FIRST */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Amount</label>
+                        <div className="input-wrapper">
+                            <span className="input-prefix">$</span>
+                            <input
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                placeholder="0.00"
+                                step="0.01"
+                                min="0"
+                                className="input-field"
+                                style={{ paddingLeft: '36px' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Date Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Date</label>
                         <input
@@ -132,24 +175,6 @@ export default function QuickAddOverlay({ isOpen, onClose, onSave }) {
                             placeholder="e.g., Starbucks Coffee"
                             className="input-field"
                         />
-                    </div>
-
-                    {/* Amount Input */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Amount</label>
-                        <div className="input-wrapper">
-                            <span className="input-prefix">$</span>
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                                step="0.01"
-                                min="0"
-                                className="input-field"
-                                style={{ paddingLeft: '36px' }}
-                            />
-                        </div>
                     </div>
 
                     {/* Category Dropdown */}

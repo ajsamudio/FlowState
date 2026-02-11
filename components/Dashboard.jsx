@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { getTransactions, getMonthlySpending, getSettings, getEOYSavingsData, deleteTransaction, updateSettings, updateTransaction, getCategories } from '../utils/storage';
 
+import UserMenu from './UserMenu';
+
+import { createClient } from '../utils/supabase/client';
+import { getSupabaseSettings, updateSupabaseSettings, getEOYSavingsData as getSupabaseEOYData, updateSupabaseTransaction } from '../utils/supabaseData';
+
 // Progress Ring Component
 function ProgressRing({ progress, size = 180, strokeWidth = 12 }) {
     const radius = (size - strokeWidth) / 2;
@@ -318,7 +323,7 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
 
     // Filter transactions for selected month
     const monthTransactions = transactions.filter(t => {
-        const date = new Date(t.createdAt);
+        const date = new Date(t.createdAt || t.created_at);
         return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
     });
 
@@ -355,26 +360,71 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
         setShowSettings(true);
     };
 
-    const saveSettings = () => {
+    // Auth state
+    const [user, setUser] = useState(null);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const init = async () => {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            setUser(currentUser);
+
+            if (currentUser) {
+                const settings = await getSupabaseSettings();
+                if (settings) {
+                    setBudget(parseFloat(settings.monthly_budget));
+                    setSavingsGoal(parseFloat(settings.savings_goal));
+                }
+                // EOY data is calculated locally from transactions for now, 
+                // but we could optimize later
+                setSavingsData(getEOYSavingsData());
+            } else {
+                const settings = getSettings();
+                setBudget(settings.monthlyBudget);
+                setSavingsGoal(settings.savingsGoal);
+                setSavingsData(getEOYSavingsData());
+            }
+        };
+
+        init();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [transactions, supabase]);
+
+    const saveSettings = async () => {
         const newBudget = parseFloat(editBudget) || budget;
         const newSavingsGoal = parseFloat(editSavingsGoal) || savingsGoal;
+
         setBudget(newBudget);
         setSavingsGoal(newSavingsGoal);
-        updateSettings({ monthlyBudget: newBudget, savingsGoal: newSavingsGoal });
+
+        if (user) {
+            await updateSupabaseSettings({
+                monthly_budget: newBudget,
+                savings_goal: newSavingsGoal
+            });
+        } else {
+            updateSettings({ monthlyBudget: newBudget, savingsGoal: newSavingsGoal });
+        }
+
         setShowSettings(false);
     };
-
     // Open edit modal for a transaction
     const openEditModal = (t) => {
         setEditingTransaction(t);
         setEditTitle(t.title);
         setEditAmount(t.amount.toString());
-        setEditDate(t.createdAt.split('T')[0]);
+        const datePart = (t.createdAt || t.created_at || new Date().toISOString()).split('T')[0];
+        setEditDate(datePart);
         setEditCategory(t.category);
     };
 
     // Save edited transaction
-    const saveEditedTransaction = () => {
+    const saveEditedTransaction = async () => {
         if (!editingTransaction) return;
 
         const updates = {
@@ -384,7 +434,13 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
             category: editCategory
         };
 
-        const updated = updateTransaction(editingTransaction.id, updates);
+        let updated;
+        if (user) {
+            updated = await updateSupabaseTransaction(editingTransaction.id, updates);
+        } else {
+            updated = updateTransaction(editingTransaction.id, updates);
+        }
+
         if (updated && onUpdate) {
             onUpdate(updated);
         }
@@ -395,26 +451,21 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
     const toggleExpanded = (id) => {
         setExpandedId(expandedId === id ? null : id);
     };
-
-    useEffect(() => {
-        const settings = getSettings();
-        setBudget(settings.monthlyBudget);
-        setSavingsGoal(settings.savingsGoal);
-        setSavingsData(getEOYSavingsData());
-    }, [transactions]);
-
     const progress = (monthlySpending / budget) * 100;
     const remaining = budget - monthlySpending;
 
     const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
     // Sort transactions by date (newest first) - only for selected month
-    const sortedTransactions = [...monthTransactions].sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const sortedTransactions = [...monthTransactions].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at);
+        const dateB = new Date(b.createdAt || b.created_at);
+        return dateB - dateA;
+    });
 
     return (
         <div className="min-h-screen pb-24">
@@ -479,19 +530,22 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
             {/* Header */}
             <header className="pt-12 pb-6 px-6 flex items-start justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">FlowState</h1>
+                    <h1 className="text-3xl font-bold text-white">PocketWatch</h1>
                     <p className="text-gray-400 mt-1">Track your financial flow</p>
                 </div>
-                <button
-                    onClick={openSettings}
-                    className="w-10 h-10 rounded-full bg-gray-800/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all"
-                    aria-label="Settings"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={openSettings}
+                        className="w-10 h-10 rounded-full bg-gray-800/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all"
+                        aria-label="Settings"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                    <UserMenu />
+                </div>
             </header>
 
             {/* Main Content */}

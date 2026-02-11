@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-    title: "FlowState - Financial Tracker",
+    title: "PocketWatch - Financial Tracker",
     description: "A mobile-first, high-vibe financial tracker with glassmorphism UI",
     viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };

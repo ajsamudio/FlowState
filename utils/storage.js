@@ -1,5 +1,5 @@
-// LocalStorage key for FlowState data
-const STORAGE_KEY = 'flowstate_data';
+// LocalStorage key for PocketWatch data
+const STORAGE_KEY = 'pocketwatch_data';
 
 // Category keywords for auto-suggestion
 const categoryKeywords = {

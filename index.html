@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FlowState - Financial Tracker</title>
+    <title>PocketWatch - Financial Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -126,26 +127,56 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
-        /* Animation classes */
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        .animate-slide-up { animation: slideUp 0.4s ease-out; }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Animation classes */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         /* Progress Ring */
-        .progress-ring { transform: rotate(-90deg); }
-        .progress-ring__circle { transition: stroke-dashoffset 0.5s ease; }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
     </style>
 </head>
+
 <body>
     <div id="app"></div>
 
     <script>
         // --- STORAGE UTILS ---
-        const STORAGE_KEY = 'flowstate_data';
-        
+        const STORAGE_KEY = 'pocketwatch_data';
+
         const categoryKeywords = {
             'Food': ['starbucks', 'mcdonalds', 'subway', 'chipotle', 'pizza', 'burger', 'restaurant', 'cafe', 'coffee', 'lunch', 'dinner', 'breakfast', 'groceries', 'walmart', 'costco', 'trader', 'whole foods', 'doordash', 'ubereats', 'grubhub'],
             'Utilities': ['shell', 'gas', 'electric', 'water', 'internet', 'phone', 'verizon', 'att', 't-mobile', 'comcast', 'xfinity', 'pg&e', 'utility', 'bill'],
@@ -170,7 +201,7 @@
             'Other': 'bg-gray-500/20 text-gray-400'
         };
 
-         const categoryHexColors = {
+        const categoryHexColors = {
             'Food': '#f97316',
             'Utilities': '#3b82f6',
             'Transport': '#a855f7',
@@ -213,7 +244,7 @@
             // Settings Edit State
             editBudget: '',
             editSavingsGoal: '',
-             // Transaction Form State
+            // Transaction Form State
             form: {
                 title: '', amount: '', category: 'Other', comment: '', type: 'expense', date: new Date().toISOString().split('T')[0]
             }
@@ -228,7 +259,7 @@
             const data = getData();
             const transactions = data.transactions;
             const settings = data.settings;
-            
+
             // Calculations
             const currentYear = new Date().getFullYear();
             const monthTransactions = transactions.filter(t => {
@@ -238,16 +269,16 @@
             const monthlySpending = monthTransactions
                 .filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-            
+
             const progress = Math.min((monthlySpending / settings.monthlyBudget) * 100, 100);
             const remaining = settings.monthlyBudget - monthlySpending;
 
             // EOY Data
             const eoyData = Array(12).fill(null).map((_, i) => ({ month: i, income: 0, expenses: 0, savings: 0 }));
             transactions.filter(t => new Date(t.createdAt).getFullYear() === currentYear).forEach(t => {
-                 const m = new Date(t.createdAt).getMonth();
-                 if(t.type === 'income') eoyData[m].income += t.amount;
-                 else eoyData[m].expenses += t.amount;
+                const m = new Date(t.createdAt).getMonth();
+                if (t.type === 'income') eoyData[m].income += t.amount;
+                else eoyData[m].expenses += t.amount;
             });
             let cumulative = 0;
             eoyData.forEach(m => { m.savings = m.income - m.expenses; cumulative += m.savings; m.cumulative = cumulative; });
@@ -259,9 +290,9 @@
             const categoryBreakdown = monthTransactions.filter(t => t.type === 'expense').reduce((acc, t) => {
                 const existing = acc.find(c => c.category === t.category);
                 if (existing) existing.amount += t.amount;
-                else acc.push({category: t.category, amount: t.amount});
+                else acc.push({ category: t.category, amount: t.amount });
                 return acc;
-            }, []).sort((a,b) => b.amount - a.amount);
+            }, []).sort((a, b) => b.amount - a.amount);
 
             // --- HTML GENERATION ---
             let html = `
@@ -326,7 +357,7 @@
             return `
             <header class="pt-12 pb-6 px-6 flex items-start justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-white">FlowState</h1>
+                    <h1 class="text-3xl font-bold text-white">PocketWatch</h1>
                     <p class="text-gray-400 mt-1">Track your financial flow</p>
                 </div>
                 <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-gray-800/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all">
@@ -340,21 +371,21 @@
             const currentMonth = new Date().getMonth();
             const monthlySavings = data.map(d => Math.max(d.savings || 0, 0));
             const maxVal = Math.max(...monthlySavings.slice(0, currentMonth + 1), 1);
-            
+
             const barsHtml = months.map((m, i) => {
                 const saving = monthlySavings[i];
-                const height = maxVal > 0 ? (saving/maxVal)*100 : 0;
+                const height = maxVal > 0 ? (saving / maxVal) * 100 : 0;
                 const isSelected = i === state.selectedMonth;
                 const isPast = i <= currentMonth;
-                
+
                 let barClass = isSelected ? 'bg-gradient-to-t from-cyan-500 to-cyan-300 shadow-[0_0_16px_rgba(6,182,212,0.6)]' :
-                               isPast ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gray-600';
-                               
+                    isPast ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gray-600';
+
                 return `
                 <div class="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onclick="selectMonth(${i})">
                     <div class="w-full rounded-t-md transition-all duration-300 ${barClass}" 
-                         style="height: ${isPast ? Math.max(height, 8) : 8}px; opacity: ${isSelected?1:isPast?0.7:0.4}"></div>
-                    <span class="text-[10px] ${isSelected?'text-cyan-400 font-bold':'text-gray-400'}">${m}</span>
+                         style="height: ${isPast ? Math.max(height, 8) : 8}px; opacity: ${isSelected ? 1 : isPast ? 0.7 : 0.4}"></div>
+                    <span class="text-[10px] ${isSelected ? 'text-cyan-400 font-bold' : 'text-gray-400'}">${m}</span>
                 </div>`;
             }).join('');
 
@@ -380,17 +411,17 @@
         }
 
         function renderProgressRing(pct) {
-            const size = 180, stroke=12;
-            const r = (size - stroke)/2;
+            const size = 180, stroke = 12;
+            const r = (size - stroke) / 2;
             const param = 2 * Math.PI * r;
-            const offset = param - (Math.min(pct, 100)/100) * param;
+            const offset = param - (Math.min(pct, 100) / 100) * param;
             let color = pct < 50 ? '#10b981' : pct < 75 ? '#f59e0b' : '#ef4444';
 
             return `
             <div class="relative" style="width:${size}px; height:${size}px">
                 <svg class="progress-ring" width="${size}" height="${size}">
-                    <circle stroke="rgba(255,255,255,0.1)" stroke-width="${stroke}" fill="transparent" r="${r}" cx="${size/2}" cy="${size/2}"/>
-                    <circle class="progress-ring__circle" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" fill="transparent" r="${r}" cx="${size/2}" cy="${size/2}" style="stroke-dasharray: ${param}; stroke-dashoffset: ${offset}; filter: drop-shadow(0 0 8px ${color}40)"/>
+                    <circle stroke="rgba(255,255,255,0.1)" stroke-width="${stroke}" fill="transparent" r="${r}" cx="${size / 2}" cy="${size / 2}"/>
+                    <circle class="progress-ring__circle" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" fill="transparent" r="${r}" cx="${size / 2}" cy="${size / 2}" style="stroke-dasharray: ${param}; stroke-dashoffset: ${offset}; filter: drop-shadow(0 0 8px ${color}40)"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                     <span class="text-3xl font-bold text-white">${Math.round(pct)}%</span>
@@ -401,32 +432,32 @@
 
         function renderPieChart(data) {
             const total = data.reduce((s, c) => s + c.amount, 0);
-            if(total === 0) return `<div class="text-center py-8 text-gray-400">No expenses this month</div>`;
-            
+            if (total === 0) return `<div class="text-center py-8 text-gray-400">No expenses this month</div>`;
+
             let currentAngle = 0;
             const paths = data.map(slice => {
                 const angle = (slice.amount / total) * 360;
                 const start = currentAngle;
                 const end = currentAngle + angle;
                 currentAngle += angle;
-                
+
                 // SVG Path calc
                 const r = 80;
-                const x1 = 100 + r * Math.cos((start-90)*Math.PI/180);
-                const y1 = 100 + r * Math.sin((start-90)*Math.PI/180);
-                const x2 = 100 + r * Math.cos((end-90)*Math.PI/180);
-                const y2 = 100 + r * Math.sin((end-90)*Math.PI/180);
+                const x1 = 100 + r * Math.cos((start - 90) * Math.PI / 180);
+                const y1 = 100 + r * Math.sin((start - 90) * Math.PI / 180);
+                const x2 = 100 + r * Math.cos((end - 90) * Math.PI / 180);
+                const y2 = 100 + r * Math.sin((end - 90) * Math.PI / 180);
                 const large = angle > 180 ? 1 : 0;
                 const d = `M 100 100 L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
-                
-                return `<path d="${d}" fill="${categoryHexColors[slice.category]||'#6b7280'}" />`;
+
+                return `<path d="${d}" fill="${categoryHexColors[slice.category] || '#6b7280'}" />`;
             }).join('');
 
             const legend = data.map(s => `
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full" style="background:${categoryHexColors[s.category]||'#666'}"></div>
+                    <div class="w-3 h-3 rounded-full" style="background:${categoryHexColors[s.category] || '#666'}"></div>
                     <span class="text-xs text-gray-400 truncate w-20">${s.category}</span>
-                    <span class="text-xs text-white ml-auto">${Math.round((s.amount/total)*100)}%</span>
+                    <span class="text-xs text-white ml-auto">${Math.round((s.amount / total) * 100)}%</span>
                 </div>`).join('');
 
             return `
@@ -442,42 +473,42 @@
         }
 
         function renderTransactionsList(transactions) {
-            if(transactions.length === 0) return '<div class="text-center py-8 text-gray-400">No transactions this month</div>';
-            
-            const sorted = [...transactions].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            if (transactions.length === 0) return '<div class="text-center py-8 text-gray-400">No transactions this month</div>';
+
+            const sorted = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             return `<div class="space-y-3 max-h-96 overflow-y-auto pr-2">
                 ${sorted.map(t => {
-                    const isIncome = t.type === 'income';
-                    const expanded = state.expandedId === t.id;
-                    return `
+                const isIncome = t.type === 'income';
+                const expanded = state.expandedId === t.id;
+                return `
                     <div class="transaction-item group">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="toggleExpand('${t.id}')">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center ${isIncome?'bg-emerald-500/20 text-emerald-400':'bg-gray-700 text-gray-400'}">
-                                    ${isIncome ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>' : 
-                                                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>'}
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center ${isIncome ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-400'}">
+                                    ${isIncome ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>' :
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>'}
                                 </div>
                                 <div>
                                     <p class="font-medium text-white truncate text-sm">${t.title}</p>
                                     <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="category-badge ${categoryColors[t.category]||'text-gray-400 bg-gray-700'}">${t.category}</span>
+                                        <span class="category-badge ${categoryColors[t.category] || 'text-gray-400 bg-gray-700'}">${t.category}</span>
                                         <span class="text-xs text-gray-500">${new Date(t.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <span class="text-sm font-semibold ${isIncome?'text-emerald-400':'text-white'}">${isIncome?'+':'-'}$${t.amount.toFixed(2)}</span>
+                                <span class="text-sm font-semibold ${isIncome ? 'text-emerald-400' : 'text-white'}">${isIncome ? '+' : '-'}$${t.amount.toFixed(2)}</span>
                                 <button onclick="deleteTx('${t.id}')" class="text-red-400 hover:bg-red-500/10 p-1.5 rounded-full transition-colors"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                             </div>
                         </div>
                         ${expanded ? `<div class="mt-3 pt-3 border-t border-white/10 text-sm text-gray-300 animate-fade-in">${t.comment || '<em class="text-gray-500">No comment</em>'}</div>` : ''}
                     </div>`;
-                }).join('')}
+            }).join('')}
             </div>`;
         }
 
         function renderOverlay(isOpen) {
-            if(!isOpen) return '';
+            if (!isOpen) return '';
             const cats = Object.keys(categoryKeywords);
             return `
             <div class="fixed inset-0 z-50 overlay-backdrop flex items-center justify-center p-4 animate-fade-in" onclick="if(event.target===this) toggleOverlay(false)">
@@ -488,14 +519,14 @@
                     </div>
                     <form onsubmit="handleSave(event)" class="p-6 pt-4 space-y-4 overflow-y-auto flex-1">
                         <div class="flex gap-2 p-1 bg-[rgba(30,41,59,0.8)] rounded-xl">
-                            <button type="button" onclick="setFormType('expense')" class="flex-1 py-2 rounded-lg font-medium transition-all ${state.form.type==='expense'?'bg-red-500/20 text-red-400 shadow-lg':'text-gray-400'}">Expense</button>
-                            <button type="button" onclick="setFormType('income')" class="flex-1 py-2 rounded-lg font-medium transition-all ${state.form.type==='income'?'bg-emerald-500/20 text-emerald-400 shadow-lg':'text-gray-400'}">Income</button>
+                            <button type="button" onclick="setFormType('expense')" class="flex-1 py-2 rounded-lg font-medium transition-all ${state.form.type === 'expense' ? 'bg-red-500/20 text-red-400 shadow-lg' : 'text-gray-400'}">Expense</button>
+                            <button type="button" onclick="setFormType('income')" class="flex-1 py-2 rounded-lg font-medium transition-all ${state.form.type === 'income' ? 'bg-emerald-500/20 text-emerald-400 shadow-lg' : 'text-gray-400'}">Income</button>
                         </div>
                         <div><label class="block text-sm text-gray-400 mb-1">Date</label><input type="date" required value="${state.form.date}" onchange="updateForm('date', this.value)" class="input-field"></div>
                         <div><label class="block text-sm text-gray-400 mb-1">Title</label><input type="text" required placeholder="Starbucks" value="${state.form.title}" oninput="updateForm('title', this.value)" class="input-field"></div>
                         <div><label class="block text-sm text-gray-400 mb-1">Amount</label><input type="number" required step="0.01" placeholder="0.00" value="${state.form.amount}" oninput="updateForm('amount', this.value)" class="input-field"></div>
                         <div><label class="block text-sm text-gray-400 mb-1">Category</label><select onchange="updateForm('category', this.value)" class="input-field">
-                            ${cats.map(c => `<option value="${c}" ${c===state.form.category?'selected':''}>${c}</option>`).join('')}
+                            ${cats.map(c => `<option value="${c}" ${c === state.form.category ? 'selected' : ''}>${c}</option>`).join('')}
                         </select></div>
                         <div><label class="block text-sm text-gray-400 mb-1">Comment</label><textarea rows="2" oninput="updateForm('comment', this.value)" class="input-field">${state.form.comment}</textarea></div>
                         <button type="submit" class="btn-primary w-full mt-4">Save Transaction</button>
@@ -503,10 +534,10 @@
                 </div>
             </div>`;
         }
-        
+
         function renderSettingsModal(isOpen, settings) {
-             if(!isOpen) return '';
-             return `
+            if (!isOpen) return '';
+            return `
              <div class="fixed inset-0 z-50 overlay-backdrop flex items-center justify-center p-4 animate-fade-in" onclick="if(event.target===this) openSettings(false)">
                 <div class="glass-card w-full max-w-sm animate-slide-up p-6">
                     <div class="flex items-center justify-between mb-6">
@@ -526,16 +557,16 @@
 
         function toggleOverlay(show) {
             state.showOverlay = show;
-             // Reset form on open
-            if(show) state.form = { title: '', amount: '', category: 'Other', comment: '', type: 'expense', date: new Date().toISOString().split('T')[0] };
+            // Reset form on open
+            if (show) state.form = { title: '', amount: '', category: 'Other', comment: '', type: 'expense', date: new Date().toISOString().split('T')[0] };
             renderApp();
         }
-        
+
         function openSettings(show = true) {
             state.showSettings = show;
             renderApp();
         }
-        
+
         function saveSettingsForm() {
             const b = document.getElementById('set-budget').value;
             const g = document.getElementById('set-goal').value;
@@ -558,7 +589,7 @@
         }
 
         function deleteTx(id) {
-            if(!confirm('Delete this transaction?')) return;
+            if (!confirm('Delete this transaction?')) return;
             const data = getData();
             data.transactions = data.transactions.filter(t => t.id !== id);
             saveData(data);
@@ -571,9 +602,9 @@
 
         function updateForm(field, value) {
             state.form[field] = value;
-            if(field === 'title' && value.length > 2) {
+            if (field === 'title' && value.length > 2) {
                 // Auto suggest
-                 for (const [cat, keys] of Object.entries(categoryKeywords)) {
+                for (const [cat, keys] of Object.entries(categoryKeywords)) {
                     if (keys.some(k => value.toLowerCase().includes(k))) {
                         state.form.category = cat;
                         break;
@@ -587,7 +618,7 @@
             // The renderOverlay retrieves values from state.form.
             // But we can't re-render while typing.
         }
-        
+
         // Fix for input focus lost: Modify renderApp to NOT re-render if overlay is open and we are just typing?
         // Actually, for this simple file, let's just NOT re-render on updateForm.
         // updateForm just updates the state variable.
@@ -595,12 +626,12 @@
         // The HTML inputs will hold their own state until I re-render.
         // But renderOverlay sets value="${state.form.amount}".
         // So I must ensure state matches input before any re-render.
-        
+
         function handleSave(e) {
             e.preventDefault();
             const form = state.form;
             const data = getData();
-            
+
             const newTx = {
                 id: Date.now().toString(),
                 createdAt: new Date(form.date + 'T12:00:00').toISOString(),
@@ -610,7 +641,7 @@
                 type: form.type,
                 comment: form.comment
             };
-            
+
             data.transactions = [newTx, ...data.transactions];
             saveData(data);
             toggleOverlay(false);
@@ -620,4 +651,5 @@
         renderApp();
     </script>
 </body>
+
 </html>
