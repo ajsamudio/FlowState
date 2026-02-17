@@ -319,7 +319,13 @@ export default function Dashboard({ transactions, onAddClick, onDelete, onUpdate
     // Expanded transaction for viewing comments
     const [expandedId, setExpandedId] = useState(null);
 
-    const categories = getCategories();
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setCategories(getCategories() || []);
+        }
+    }, []);
 
     // Filter transactions for selected month
     const monthTransactions = transactions.filter(t => {

@@ -20,7 +20,11 @@ export default function QuickAddOverlay({ isOpen, onClose, onSave }) {
     const [date, setDate] = useState(getTodayDate());
     const [user, setUser] = useState(null);
     const supabase = createClient();
-    const categories = getCategories();
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        setCategories(getCategories() || []);
+    }, []);
 
     // Check user on mount and auth change
     useEffect(() => {
